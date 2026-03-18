@@ -16,27 +16,47 @@ import Image from "next/image";
 import { useState, useEffect, useCallback } from "react";
 import { 
   MapPin, 
-  Calendar, 
   Fuel, 
   ShieldCheck,
-  CircleDollarSign
 } from "lucide-react";
 
 interface Listing {
   id: string;
+  userId: string;
   make: string;
   model: string;
   type: string;
+  year: string;
   status: string;
-  frontView: string;
+  description: string;
   pickupArea: string;
   pickupLga: string;
-  description?: string;
-  year?: string;
-  seat?: string;
-  transmission?: string;
-  gasType?: string;
+  seat: string;
+  availability: boolean;
+  availableDates: string[];
+  unavailableDates: string[];
+  transmission: string;
+  gasType: string;
+  frontView: string;
+  backView: string;
+  sideView: string;
+  dashboardView: string;
+  interiorView: string;
+  exteriorFeature: string[];
+  interiorFeature: string[];
+  millage: string;
+  insuranceDoc: string;
+  registrationDoc: string;
+  customDutyDoc: string;
+  ownershipDoc: string;
+  rent: number;
+  cautionFee: number;
+  threeDaysDiscount: number;
+  monthDiscount: number;
+  createdAt: string;
+  updatedAt: string;
   user?: {
+    id: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -74,6 +94,7 @@ export default function CarsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [activeImage, setActiveImage] = useState<string | null>(null);
 
   const fetchListings = useCallback(async () => {
     try {
@@ -97,6 +118,8 @@ export default function CarsPage() {
         },
         credentials: 'include',
       });
+
+     
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
@@ -128,7 +151,7 @@ export default function CarsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, statusFilter, searchTerm]);
+  }, [page, statusFilter, searchTerm, router]);
 
   const handleStatusUpdate = async (id: string, newStatus: "approved" | "declined") => {
     let reason = "";
@@ -322,6 +345,7 @@ export default function CarsPage() {
                       <button 
                         onClick={() => {
                           setSelectedCar(car);
+                          setActiveImage(car.frontView);
                           setIsModalOpen(true);
                         }}
                         className="p-2.5 rounded-xl cursor-pointer glass hover:text-primary transition-all group/btn"
@@ -393,149 +417,292 @@ export default function CarsPage() {
         {/* --- Car Details Modal --- */}
         <AnimatePresence>
           {isModalOpen && selectedCar && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsModalOpen(false)}
-                className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                className="absolute inset-0 bg-black/90 backdrop-blur-xl"
               />
               <motion.div 
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="relative w-full max-w-4xl glass-card overflow-hidden shadow-2xl border border-white/10"
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-full max-w-5xl h-[90vh] glass-card overflow-hidden shadow-2xl border border-white/10 flex flex-col"
               >
-                {/* Header with Image */}
-                <div className="h-56 sm:h-50 relative">
-                  <Image 
-                    src={selectedCar.frontView || "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1200"} 
-                    alt={selectedCar.make}
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-                  <button 
-                    onClick={() => setIsModalOpen(false)}
-                    className="absolute top-6 cursor-pointer right-6 p-2 rounded-full glass hover:bg-white/20 text-white transition-all"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                  <div className="absolute bottom-6 left-8 right-8">
-                    <div className="flex items-end justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                           <span className="px-3 py-1 rounded-full bg-primary/20 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-widest">
-                             {selectedCar.type || 'Luxury'}
+                {/* Close Button */}
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="absolute top-6 right-6 p-2 rounded-full glass hover:bg-white/20 text-white transition-all z-50 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                {/* Main Scrollable Content */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-10">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                    
+                    {/* Left Column: Images and Gallery */}
+                    <div className="lg:col-span-7 space-y-8">
+                      {/* Hero Image */}
+                      <div className="relative aspect-16/10 rounded-3xl overflow-hidden glass border border-white/10 group">
+                        <AnimatePresence mode="wait">
+                          <motion.div
+                            key={activeImage}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="absolute inset-0"
+                          >
+                            <Image 
+                              src={activeImage || "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1200"} 
+                              alt={selectedCar.make}
+                              fill
+                              className="object-cover"
+                            />
+                          </motion.div>
+                        </AnimatePresence>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                        <div className="absolute bottom-6 left-6">
+                           <span className="px-3 py-1 rounded-full bg-primary/20 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-widest backdrop-blur-md">
+                             {activeImage === selectedCar.frontView ? 'Front View' : 
+                              activeImage === selectedCar.backView ? 'Back View' :
+                              activeImage === selectedCar.sideView ? 'Side View' :
+                              activeImage === selectedCar.dashboardView ? 'Dashboard' : 'Interior'}
                            </span>
-                           <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                             selectedCar.status === 'APPROVED' ? 'bg-emerald-400/20 text-emerald-400 border border-emerald-400/20' : 
-                             selectedCar.status === 'PENDING' ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20' :
-                             'bg-red-400/20 text-red-400 border border-red-400/20'
-                           }`}>
-                             {selectedCar.status}
-                           </span>
-                        </div>
-                        <h2 className="text-4xl font-bold text-white capitalize">{selectedCar.make} {selectedCar.model}</h2>
-                        <div className="flex items-center gap-4 mt-2 text-white/60">
-                           <div className="flex items-center gap-1.5 text-sm">
-                             <MapPin className="w-4 h-4" />
-                             {selectedCar.pickupArea}, {selectedCar.pickupLga}
-                           </div>
-                           <div className="flex items-center gap-1.5 text-sm">
-                             <Calendar className="w-4 h-4" />
-                             Year: {selectedCar.year || '2022'}
-                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Content */}
-                <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                  <div className="lg:col-span-2 space-y-8">
-                    <div>
-                      <h4 className="text-sm font-bold text-white/40 uppercase tracking-widest mb-4">Vehicle Description</h4>
-                      <p className="text-white/70 leading-relaxed text-lg italic">
-                        &quot;{selectedCar.description || `Experience the ultimate driving thrill with this exquisite ${selectedCar.make} ${selectedCar.model}. Perfectly maintained and ready for your next adventure.`}&quot;
-                      </p>
-                    </div>
+                      {/* Image Gallery Grid */}
+                      <div className="grid grid-cols-5 gap-4">
+                        {[selectedCar.frontView, selectedCar.backView, selectedCar.sideView, selectedCar.dashboardView, selectedCar.interiorView].map((view, i) => (
+                          <div 
+                            key={i} 
+                            onClick={() => setActiveImage(view)}
+                            className={`relative aspect-square rounded-xl overflow-hidden glass border transition-all cursor-pointer group ${
+                              activeImage === view ? 'border-primary ring-2 ring-primary/20' : 'border-white/5 hover:border-white/20'
+                            }`}
+                          >
+                             <Image 
+                                src={view || "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=400"} 
+                                alt={`View ${i + 1}`}
+                                fill
+                                className="object-cover transition-transform duration-500 group-hover:scale-110"
+                             />
+                             {activeImage === view && (
+                               <div className="absolute inset-0 bg-primary/10 backdrop-blur-[1px]" />
+                             )}
+                          </div>
+                        ))}
+                      </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                      <div className="glass p-4 rounded-2xl">
-                        <Fuel className="w-5 h-5 text-primary mb-2" />
-                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Gas Type</p>
-                        <p className="text-white font-bold">{selectedCar.gasType || 'Petrol'}</p>
+                      {/* Description */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-bold text-white/40 uppercase tracking-widest">About this Vehicle</h4>
+                        <p className="text-white/70 leading-relaxed text-lg font-light">
+                          {selectedCar.description || `Experience the ultimate driving thrill with this exquisite ${selectedCar.make} ${selectedCar.model}. Perfectly maintained and ready for your next adventure.`}
+                        </p>
                       </div>
-                      <div className="glass p-4 rounded-2xl">
-                        <Activity className="w-5 h-5 text-emerald-400 mb-2" />
-                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Transmission</p>
-                        <p className="text-white font-bold">{selectedCar.transmission || 'Automatic'}</p>
-                      </div>
-                      <div className="glass p-4 rounded-2xl">
-                        <Users className="w-5 h-5 text-amber-400 mb-2" />
-                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Seats</p>
-                        <p className="text-white font-bold">{selectedCar.seat || '5'} Seater</p>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="space-y-6">
-                    <div className="glass-card p-6 border border-white/5">
-                      <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-6">Owner Information</h4>
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 rounded-full border-2 border-primary/20 p-0.5">
-                           <div className="w-full h-full rounded-full bg-primary flex items-center justify-center text-white font-bold italic">
-                             {selectedCar.user?.firstName?.[0]}{selectedCar.user?.lastName?.[0]}
-                           </div>
+                      {/* Features Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                          <h4 className="text-sm font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+                             <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                             Exterior Features
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedCar.exteriorFeature?.length > 0 ? selectedCar.exteriorFeature.map((feat, i) => (
+                              <span key={i} className="px-3 py-1.5 rounded-lg glass-card border border-white/5 text-xs text-white/60">
+                                {feat}
+                              </span>
+                            )) : <span className="text-white/20 italic text-xs">No exterior features listed</span>}
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-white">{selectedCar.user?.firstName} {selectedCar.user?.lastName}</p>
-                          <p className="text-xs text-white/40">{selectedCar.user?.email}</p>
+                        <div className="space-y-4">
+                          <h4 className="text-sm font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+                             <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                             Interior Features
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                           {selectedCar.interiorFeature?.length > 0 ? selectedCar.interiorFeature.map((feat, i) => (
+                              <span key={i} className="px-3 py-1.5 rounded-lg glass-card border border-white/5 text-xs text-white/60">
+                                {feat}
+                              </span>
+                            )) : <span className="text-white/20 italic text-xs">No interior features listed</span>}
+                          </div>
                         </div>
                       </div>
-                      {/* <button className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-bold transition-all border border-white/5">
-                        View Owner Profile
-                      </button> */}
+
+                      {/* Documents Section */}
+                      <div className="space-y-4 pt-4">
+                         <h4 className="text-sm font-bold text-white/40 uppercase tracking-widest">Compliance Documents</h4>
+                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            {[
+                              { label: 'Insurance', url: selectedCar.insuranceDoc },
+                              { label: 'Registration', url: selectedCar.registrationDoc },
+                              { label: 'Custom Duty', url: selectedCar.customDutyDoc },
+                              { label: 'Ownership', url: selectedCar.ownershipDoc }
+                            ].map((doc, i) => (
+                              <a 
+                                key={i} 
+                                href={doc.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="p-4 rounded-2xl glass border border-white/5 hover:bg-white/5 transition-all flex flex-col items-center gap-3 text-center group"
+                              >
+                                <ShieldCheck className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
+                                <span className="text-[10px] font-bold text-white/60 uppercase tracking-tight">{doc.label}</span>
+                              </a>
+                            ))}
+                         </div>
+                      </div>
                     </div>
 
-                    <div className="glass-card p-6 border border-emerald-400/10 bg-emerald-400/5">
-                       <div className="flex items-center gap-2 text-emerald-400 mb-2">
-                         <ShieldCheck className="w-4 h-4" />
-                         <span className="text-[10px] font-bold uppercase tracking-widest">Verification Status</span>
+                    {/* Right Column: Specs, Pricing & Availability */}
+                    <div className="lg:col-span-5 space-y-8">
+                       {/* Basic Info Card */}
+                       <div className="glass-card p-8 border border-white/10 space-y-6">
+                          <div className="flex justify-between items-start">
+                             <div>
+                                <h2 className="text-3xl font-bold text-white capitalize">{selectedCar.make} {selectedCar.model}</h2>
+                                <p className="text-white/40 text-sm mt-1 uppercase tracking-widest font-bold">
+                                   {selectedCar.year} • {selectedCar.type}
+                                </p>
+                             </div>
+                             <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                                selectedCar.status === 'APPROVED' ? 'bg-emerald-400/20 text-emerald-400 border border-emerald-400/20' : 
+                                selectedCar.status === 'PENDING' ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20' :
+                                'bg-red-400/20 text-red-400 border border-red-400/20'
+                             }`}>
+                                {selectedCar.status}
+                             </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                             <div className="glass p-4 rounded-2xl">
+                                <MapPin className="w-5 h-5 text-primary mb-2" />
+                                <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Location</p>
+                                <p className="text-white text-sm font-bold">{selectedCar.pickupArea}</p>
+                                <p className="text-white/40 text-[10px]">{selectedCar.pickupLga}</p>
+                             </div>
+                             <div className="glass p-4 rounded-2xl">
+                                <Activity className="w-5 h-5 text-emerald-400 mb-2" />
+                                <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Mileage</p>
+                                <p className="text-white text-sm font-bold">{selectedCar.millage || '0 Km'}</p>
+                             </div>
+                             <div className="glass p-4 rounded-2xl">
+                                <Fuel className="w-5 h-5 text-amber-400 mb-2" />
+                                <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Fuel & Transmission</p>
+                                <p className="text-white text-sm font-bold">{selectedCar.gasType}</p>
+                                <p className="text-white/40 text-[10px]">{selectedCar.transmission}</p>
+                             </div>
+                             <div className="glass p-4 rounded-2xl">
+                                <Users className="w-5 h-5 text-blue-400 mb-2" />
+                                <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Capacity</p>
+                                <p className="text-white text-sm font-bold">{selectedCar.seat} Seats</p>
+                             </div>
+                          </div>
                        </div>
-                       <p className="text-xs text-white/60 leading-relaxed">
-                         This vehicle has passed all system compliance checks.
-                       </p>
+
+                       {/* Pricing Card */}
+                       <div className="glass-card p-8 border border-emerald-400/10 bg-emerald-400/2 space-y-6">
+                          <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">Pricing Breakdown</h4>
+                          
+                          <div className="space-y-4">
+                             <div className="flex justify-between items-center">
+                                <span className="text-white/60 text-sm">Rent per Day</span>
+                                <span className="text-xl font-bold text-white">₦{selectedCar.rent?.toLocaleString()}</span>
+                             </div>
+                             <div className="flex justify-between items-center">
+                                <span className="text-white/60 text-sm">Caution Fee</span>
+                                <span className="text-sm font-bold text-white">₦{selectedCar.cautionFee?.toLocaleString()}</span>
+                             </div>
+                             <div className="h-px bg-white/5 my-2" />
+                             <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                   <div className="flex items-center gap-2">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+                                      <span className="text-white/60 text-xs">3+ Days Discount</span>
+                                   </div>
+                                   <span className="text-emerald-400 text-xs font-bold">{selectedCar.threeDaysDiscount}% OFF</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                   <div className="flex items-center gap-2">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+                                      <span className="text-white/60 text-xs">Monthly Discount</span>
+                                   </div>
+                                   <span className="text-emerald-400 text-xs font-bold">{selectedCar.monthDiscount}% OFF</span>
+                                </div>
+                             </div>
+                          </div>
+                       </div>
+
+                       {/* Availability & Owner */}
+                       <div className="glass-card p-8 border border-white/5 space-y-6">
+                           <div className="space-y-4">
+                              <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest">Unavailable Dates</h4>
+                              <div className="flex flex-wrap gap-2 text-[10px]">
+                                 {selectedCar.unavailableDates?.length > 0 ? selectedCar.unavailableDates.slice(0, 10).map((date, i) => (
+                                    <span key={i} className="px-2 py-1 rounded bg-red-400/10 text-red-400 border border-red-400/10">
+                                       {date}
+                                    </span>
+                                 )) : <span className="text-white/20 italic">No unavailable dates</span>}
+                                 {selectedCar.unavailableDates?.length > 10 && <span className="text-white/40">+{selectedCar.unavailableDates.length - 10} more</span>}
+                              </div>
+                           </div>
+
+                          <div className="pt-6 border-t border-white/5">
+                             <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">Owner Contact</h4>
+                             <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full border-2 border-primary/20 p-0.5 shadow-xl">
+                                   <div className="w-full h-full rounded-full bg-linear-to-br from-primary to-primary-dark flex items-center justify-center text-white font-bold italic text-lg shadow-inner">
+                                     {selectedCar.user?.firstName?.[0]}{selectedCar.user?.lastName?.[0]}
+                                   </div>
+                                </div>
+                                <div>
+                                  <p className="font-bold text-white text-base">{selectedCar.user?.firstName} {selectedCar.user?.lastName}</p>
+                                  <p className="text-xs text-white/40">{selectedCar.user?.email}</p>
+                                </div>
+                             </div>
+                          </div>
+                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Footer */}
-                <div className="p-8 border-t border-white/5 flex items-center justify-between">
-                   <div className="flex items-center gap-6">
-                      <div className="flex items-center gap-2">
-                         <CircleDollarSign className="w-5 h-5 text-emerald-400" />
-                         <div>
-                            <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest leading-none">Price Rate</p>
-                            <p className="text-white font-bold">₦45,000 / day</p>
-                         </div>
-                      </div>
-                   </div>
-                   <div className="flex gap-4">
-                      <button 
-                        onClick={() => setIsModalOpen(false)}
-                        className="px-6 py-3 rounded-xl glass cursor-pointer hover:bg-white/5 text-white/60 font-bold transition-all"
-                      >
-                        Cancel
-                      </button>
-                      {/* <button className="bg-primary hover:bg-primary-light text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
-                        Edit Full Listing
-                        <ChevronRight className="w-4 h-4" />
-                      </button> */}
-                   </div>
+                <div className="p-8 border-t border-white/5 bg-black/40 flex items-center justify-end gap-4">
+                   <button 
+                     onClick={() => setIsModalOpen(false)}
+                     className="px-8 py-3 rounded-xl glass cursor-pointer hover:bg-white/10 text-white font-bold transition-all border border-white/10"
+                   >
+                     Close Details
+                   </button>
+                   {selectedCar.status === 'PENDING' && (
+                     <div className="flex gap-2">
+                        <button 
+                           onClick={() => {
+                              handleStatusUpdate(selectedCar.id, "approved");
+                              setIsModalOpen(false);
+                           }}
+                           className="px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all shadow-lg shadow-emerald-500/20"
+                        >
+                           Approve
+                        </button>
+                        <button 
+                           onClick={() => {
+                              handleStatusUpdate(selectedCar.id, "declined");
+                              setIsModalOpen(false);
+                           }}
+                           className="px-8 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition-all shadow-lg shadow-red-500/20"
+                        >
+                           Decline
+                        </button>
+                     </div>
+                   )}
                 </div>
               </motion.div>
             </div>

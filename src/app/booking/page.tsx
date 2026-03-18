@@ -12,7 +12,6 @@ import {
   X,
   Clock,
   MapPin,
-  CreditCard,
   ShieldCheck,
   CheckCircle2
 } from "lucide-react";
@@ -22,23 +21,30 @@ import Image from "next/image";
 
 interface Booking {
   id: string;
-  reference: string;
-  transactionRef: string;
-  status: string;
-  totalAmount: string;
-  paidAmount?: string;
-  balanceAmount?: string;
-  serviceCharge?: string;
-  cautionFee?: string;
+  listingId: string;
+  rentalUserId: string;
+  listingUserId: string;
   pickupDate: string;
   returnDate: string;
   pickupTime: string;
   returnTime: string;
+  status: string;
   pickupArea: string;
   dropoffArea: string;
   duration: string;
+  reason: string | null;
+  serviceCharge: string;
+  cautionFee: string;
+  totalAmount: string;
+  paidAmount: string;
+  balanceAmount: string;
+  additionalInfo: Record<string, unknown>;
   createdAt: string;
+  updatedAt: string;
+  reference?: string;
+  transactionRef?: string;
   user?: {
+    id: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -112,7 +118,7 @@ export default function BookingPage() {
       }
 
       const data = await response.json();
-    //   console.log("Bookings Data", data);
+      console.log("Bookings Data", data);
       
       if (data.status && data.data) {
         const items = data.data.data || [];
@@ -317,193 +323,251 @@ export default function BookingPage() {
         {/* --- Booking Details Modal --- */}
         <AnimatePresence>
           {isModalOpen && selectedBooking && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsModalOpen(false)}
-                className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                className="absolute inset-0 bg-black/90 backdrop-blur-xl"
               />
               <motion.div 
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="relative w-full max-w-4xl glass-card overflow-hidden shadow-2xl border border-white/10"
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-full max-w-5xl h-[90vh] glass-card overflow-hidden shadow-2xl border border-white/10 flex flex-col"
               >
-                {/* Header with Car Info */}
-                <div className="h-48 sm:h-56 relative bg-white/5">
-                  {selectedBooking.listing?.frontView ? (
-                    <Image 
-                      src={selectedBooking.listing.frontView} 
-                      alt={selectedBooking.listing.make}
-                      fill
-                      className="object-cover opacity-40"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Car className="w-20 h-20 text-white/5" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                  <button 
-                    onClick={() => setIsModalOpen(false)}
-                    className="absolute top-6 right-6 p-2 rounded-full glass hover:bg-white/20 text-white transition-all z-10"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                  <div className="absolute bottom-6 left-8 right-8">
-                    <div className="flex items-end justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                           <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                             (selectedBooking.status === 'COMPLETED' || selectedBooking.status === 'PAID') ? 'bg-emerald-400/20 text-emerald-400 border border-emerald-400/20' : 
-                             (selectedBooking.status === 'PENDING' || selectedBooking.status === 'RETURN_REQUESTED') ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20' :
-                             'bg-red-400/20 text-red-400 border border-red-400/20'
-                           }`}>
-                             {selectedBooking.status.replace("_", " ")}
-                           </span>
-                           <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full">
-                             Ref: {selectedBooking.reference || selectedBooking.id.slice(0, 8)}
-                           </span>
+                {/* Close Button */}
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="absolute top-6 right-6 p-2 rounded-full glass hover:bg-white/20 text-white transition-all z-50 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                {/* Main Scrollable Content */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-10">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                    
+                    {/* Left Column: Car Info and Timeline */}
+                    <div className="lg:col-span-7 space-y-8">
+                      {/* Car Hero Section */}
+                      <div className="relative aspect-video rounded-3xl overflow-hidden glass border border-white/10 group">
+                        {selectedBooking.listing?.frontView ? (
+                          <Image 
+                            src={selectedBooking.listing.frontView} 
+                            alt={selectedBooking.listing.make}
+                            fill
+                            className="object-cover transition-transform duration-700 group-hover:scale-110"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center bg-white/5">
+                            <Car className="w-20 h-20 text-white/10" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        <div className="absolute bottom-6 left-8">
+                           <div className="flex items-center gap-3 mb-2">
+                             <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                               (selectedBooking.status === 'COMPLETED' || selectedBooking.status === 'PAID') ? 'bg-emerald-400/20 text-emerald-400 border border-emerald-400/20' : 
+                               (selectedBooking.status === 'PENDING' || selectedBooking.status === 'RETURN_REQUESTED') ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20' :
+                               selectedBooking.status === 'UNPAID' ? 'bg-red-400/20 text-red-400 border border-red-400/20' :
+                               'bg-white/5 text-white/40 border border-white/10'
+                             }`}>
+                               {selectedBooking.status.replace("_", " ")}
+                             </span>
+                           </div>
+                           <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">
+                             {selectedBooking.listing?.make} {selectedBooking.listing?.model}
+                           </h2>
                         </div>
-                        <h2 className="text-3xl font-bold text-white uppercase italic tracking-tight">
-                          {selectedBooking.listing?.make} {selectedBooking.listing?.model}
-                        </h2>
                       </div>
-                      <div className="text-right">
-                         <p className="text-[10px] text-white/40 uppercase font-bold tracking-widest mb-1">Total Amount</p>
-                         <p className="text-3xl font-black text-primary italic">₦{parseFloat(selectedBooking.totalAmount).toLocaleString()}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Content */}
-                <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                  <div className="lg:col-span-2 space-y-8">
-                    {/* Rental Period */}
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="glass p-5 rounded-2xl border border-white/5">
-                          <div className="flex items-center gap-3 mb-4">
-                             <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                                <Calendar className="w-5 h-5" />
-                             </div>
-                             <p className="text-xs font-bold text-white uppercase tracking-widest">Pick-up</p>
-                          </div>
-                          <p className="text-xl font-bold text-white mb-1">{formatDate(selectedBooking.pickupDate)}</p>
-                          <div className="flex items-center gap-2 text-white/40 text-sm">
-                             <Clock className="w-4 h-4" />
-                             {selectedBooking.pickupTime}
-                          </div>
-                          <div className="mt-4 flex items-center gap-2 text-white/60 text-sm">
-                             <MapPin className="w-4 h-4 text-primary" />
-                             {selectedBooking.pickupArea}
-                          </div>
-                       </div>
-                       <div className="glass p-5 rounded-2xl border border-white/5">
-                          <div className="flex items-center gap-3 mb-4">
-                             <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                                <Calendar className="w-5 h-5" />
-                             </div>
-                             <p className="text-xs font-bold text-white uppercase tracking-widest">Drop-off</p>
-                          </div>
-                          <p className="text-xl font-bold text-white mb-1">{formatDate(selectedBooking.returnDate)}</p>
-                          <div className="flex items-center gap-2 text-white/40 text-sm">
-                             <Clock className="w-4 h-4" />
-                             {selectedBooking.returnTime}
-                          </div>
-                          <div className="mt-4 flex items-center gap-2 text-white/60 text-sm">
-                             <MapPin className="w-4 h-4 text-primary" />
-                             {selectedBooking.dropoffArea}
-                          </div>
-                       </div>
-                    </div>
-
-                    {/* Financial Breakdown */}
-                    <div>
-                      <h4 className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <CreditCard className="w-3.5 h-3.5" />
-                        Financial Summary
-                      </h4>
-                      <div className="glass-card divide-y divide-white/5 border border-white/5">
-                         <div className="p-4 flex justify-between items-center">
-                            <span className="text-white/60 text-sm">Service Charge</span>
-                            <span className="text-white font-bold">₦{parseFloat(selectedBooking.serviceCharge || "0").toLocaleString()}</span>
-                         </div>
-                         <div className="p-4 flex justify-between items-center">
-                            <span className="text-white/60 text-sm">Caution Fee (Refundable)</span>
-                            <span className="text-white font-bold">₦{parseFloat(selectedBooking.cautionFee || "0").toLocaleString()}</span>
-                         </div>
-                         <div className="p-4 flex justify-between items-center bg-white/2">
-                            <span className="text-primary font-bold text-sm">Total Paid</span>
-                            <span className="text-emerald-400 font-bold text-lg">₦{parseFloat(selectedBooking.paidAmount || "0").toLocaleString()}</span>
-                         </div>
-                         <div className="p-4 flex justify-between items-center">
-                            <span className="text-white/40 text-sm">Outstanding Balance</span>
-                            <span className="text-red-400 font-bold">₦{parseFloat(selectedBooking.balanceAmount || "0").toLocaleString()}</span>
-                         </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    {/* User Info */}
-                    {/* <div className="glass-card p-6 border border-white/5">
-                      <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-6 flex items-center gap-2">
-                        <User className="w-3.5 h-3.5" />
-                        Customer Details
-                      </h4>
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 rounded-full border-2 border-primary/20 p-0.5">
-                           <div className="w-full h-full rounded-full bg-primary flex items-center justify-center text-white font-bold italic">
-                             {selectedBooking.user?.firstName?.[0]}{selectedBooking.user?.lastName?.[0]}
+                      {/* Rental Journey */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="glass p-6 rounded-3xl border border-white/5 space-y-4">
+                           <div className="flex items-center gap-3">
+                              <div className="p-2.5 rounded-2xl bg-primary/10 text-primary">
+                                 <Calendar className="w-5 h-5" />
+                              </div>
+                              <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest">Collection</h4>
+                           </div>
+                           <div className="space-y-1">
+                              <p className="text-2xl font-bold text-white tracking-tight">{formatDate(selectedBooking.pickupDate)}</p>
+                              <div className="flex items-center gap-2 text-white/40 text-sm">
+                                <Clock className="w-4 h-4" />
+                                {selectedBooking.pickupTime}
+                              </div>
+                           </div>
+                           <div className="pt-4 border-t border-white/5 flex items-start gap-3">
+                              <MapPin className="w-4 h-4 text-primary mt-0.5" />
+                              <div>
+                                 <p className="text-sm font-bold text-white">{selectedBooking.pickupArea}</p>
+                                 <p className="text-[10px] text-white/30 uppercase tracking-widest">Base Location</p>
+                              </div>
                            </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-white">{selectedBooking.user?.firstName} {selectedBooking.user?.lastName}</p>
-                          <p className="text-[10px] text-white/40 line-clamp-1">{selectedBooking.user?.email}</p>
+
+                        <div className="glass p-6 rounded-3xl border border-white/5 space-y-4">
+                           <div className="flex items-center gap-3">
+                              <div className="p-2.5 rounded-2xl bg-emerald-400/10 text-emerald-400">
+                                 <Calendar className="w-5 h-5" />
+                              </div>
+                              <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest">Return</h4>
+                           </div>
+                           <div className="space-y-1">
+                              <p className="text-2xl font-bold text-white tracking-tight">{formatDate(selectedBooking.returnDate)}</p>
+                              <div className="flex items-center gap-2 text-white/40 text-sm">
+                                <Clock className="w-4 h-4" />
+                                {selectedBooking.returnTime}
+                              </div>
+                           </div>
+                           <div className="pt-4 border-t border-white/5 flex items-start gap-3">
+                              <MapPin className="w-4 h-4 text-emerald-400 mt-0.5" />
+                              <div>
+                                 <p className="text-sm font-bold text-white">{selectedBooking.dropoffArea}</p>
+                                 <p className="text-[10px] text-white/30 uppercase tracking-widest">Drop-off Zone</p>
+                              </div>
+                           </div>
                         </div>
                       </div>
-                      <button className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold uppercase tracking-widest transition-all border border-white/5">
-                        Contact Customer
-                      </button>
-                    </div> */}
 
-                    {/* Verification & Compliance */}
-                    <div className="glass-card p-6 border border-emerald-400/10 bg-emerald-400/5">
-                       <div className="flex items-center gap-2 text-emerald-400 mb-3">
-                         <ShieldCheck className="w-4 h-4" />
-                         <span className="text-[10px] font-bold uppercase tracking-widest">Payment Verified</span>
+                      {/* Rental Content & Additional Info */}
+                      {(selectedBooking.reason || selectedBooking.additionalInfo) && (
+                        <div className="space-y-6">
+                           {selectedBooking.reason && (
+                             <div className="space-y-3">
+                               <h4 className="text-[10px] font-bold text-white/30 uppercase tracking-widest px-1">Purpose of Rental</h4>
+                               <div className="p-6 rounded-2xl glass border border-white/5">
+                                 <p className="text-white/70 leading-relaxed italic">&quot;{selectedBooking.reason}&quot;</p>
+                               </div>
+                             </div>
+                           )}
+                        </div>
+                      )}
+
+                      {/* Booking Metadata */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                         <div className="glass p-4 rounded-2xl border border-white/5 text-center">
+                            <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mb-1">Duration</p>
+                            <p className="text-white font-bold">{selectedBooking.duration.split(" day(s)")[0]} Days</p>
+                         </div>
+                         <div className="glass p-4 rounded-2xl border border-white/5 text-center">
+                            <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mb-1">Created</p>
+                            <p className="text-white font-bold text-xs">{formatDate(selectedBooking.createdAt)}</p>
+                         </div>
+                         <div className="glass p-4 rounded-2xl border border-white/5 text-center">
+                            <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mb-1">Last Update</p>
+                            <p className="text-white font-bold text-xs">{formatDate(selectedBooking.updatedAt)}</p>
+                         </div>
+                         <div className="glass p-4 rounded-2xl border border-white/5 text-center">
+                            <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mb-1">Booking Hash</p>
+                            <p className="text-white font-bold text-[10px] uppercase tracking-wider">{selectedBooking.id.slice(0, 8)}</p>
+                         </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Financials & Customer */}
+                    <div className="lg:col-span-5 space-y-8">
+                       {/* Price Card */}
+                       <div className="glass-card p-8 border border-white/10 bg-linear-to-br from-white/3 to-transparent space-y-8">
+                          <div className="flex justify-between items-center pb-6 border-b border-white/5">
+                             <div>
+                                <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">Total Rental Fee</p>
+                                <p className="text-4xl font-black text-primary italic tracking-tighter">₦{parseFloat(selectedBooking.totalAmount).toLocaleString()}</p>
+                             </div>
+                             <div className="text-right">
+                                <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest ${
+                                  selectedBooking.balanceAmount === "0.00" ? 'bg-emerald-400/20 text-emerald-400' : 'bg-red-400/20 text-red-400'
+                                }`}>
+                                   {selectedBooking.balanceAmount === "0.00" ? 'Fully Paid' : 'Payment Due'}
+                                </span>
+                             </div>
+                          </div>
+
+                          <div className="space-y-4">
+                             <div className="flex justify-between items-center text-sm">
+                                <span className="text-white/40">Daily Rate Summary</span>
+                                <span className="text-white font-medium">₦{(parseFloat(selectedBooking.totalAmount) / parseInt(selectedBooking.duration)).toLocaleString()} / day</span>
+                             </div>
+                             <div className="flex justify-between items-center text-sm">
+                                <span className="text-white/40">Service Charge</span>
+                                <span className="text-white font-medium">₦{parseFloat(selectedBooking.serviceCharge).toLocaleString()}</span>
+                             </div>
+                             <div className="flex justify-between items-center text-sm">
+                                <span className="text-white/40">Caution Deposit</span>
+                                <span className="text-white font-medium">₦{parseFloat(selectedBooking.cautionFee).toLocaleString()}</span>
+                             </div>
+                             
+                             <div className="pt-4 mt-4 border-t border-white/5 space-y-3">
+                                <div className="flex justify-between items-center">
+                                   <div className="flex items-center gap-2">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+                                      <span className="text-white/60 text-sm">Amount Paid</span>
+                                   </div>
+                                   <span className="text-emerald-400 font-bold">₦{parseFloat(selectedBooking.paidAmount).toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                   <div className="flex items-center gap-2 text-red-400/60">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                                      <span className="text-sm">Balance Remaining</span>
+                                   </div>
+                                   <span className="text-red-400 font-bold">₦{parseFloat(selectedBooking.balanceAmount).toLocaleString()}</span>
+                                </div>
+                             </div>
+                          </div>
                        </div>
-                       <div className="flex items-center gap-2 text-white/60 text-xs mb-4">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                          Transaction: {selectedBooking.transactionRef || 'N/A'}
+
+                       {/* Verification Status */}
+                       <div className="glass-card p-8 border border-emerald-400/10 bg-emerald-400/2 space-y-6">
+                           <div className="flex items-center gap-3 text-emerald-400 mb-2">
+                             <div className="p-2 rounded-xl bg-emerald-400/10">
+                                <ShieldCheck className="w-5 h-5" />
+                             </div>
+                             <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400/50">Smart Contract Secure</p>
+                                <p className="text-sm font-bold text-white">Verified Transaction</p>
+                             </div>
+                           </div>
+                           
+                           <div className="space-y-4">
+                              <div className="flex items-center gap-3 text-white/60 text-xs">
+                                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                 <span className="tracking-tight line-clamp-1">Ref ID: {selectedBooking.transactionRef || selectedBooking.id}</span>
+                              </div>
+                              <p className="text-[10px] text-white/40 leading-relaxed italic">
+                                &quot;All payments are protected through our secure luxury escrow system. Deposits are automatically eligible for refund within 48h of vehicle return.&quot;
+                              </p>
+                           </div>
                        </div>
-                       <p className="text-[10px] text-white/40 leading-relaxed italic">
-                         &quot;The caution fee is held in escrow until the vehicle is safely returned and inspected.&quot;
-                       </p>
+
+                       {/* Customer Card snippet if needed */}
+                       <div className="glass-card p-6 border border-white/5 flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold italic text-sm">
+                                {selectedBooking.user?.firstName?.[0]}{selectedBooking.user?.lastName?.[0]}
+                             </div>
+                             <div>
+                                <p className="font-bold text-white text-sm">{selectedBooking.user?.firstName} {selectedBooking.user?.lastName}</p>
+                                <p className="text-[10px] text-white/40">{selectedBooking.user?.email}</p>
+                             </div>
+                          </div>
+                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-8 border-t border-white/5 flex items-center justify-between bg-black/40 backdrop-blur-xl">
-                   <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                      <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">Transaction secured</span>
-                   </div>
-                   <div className="flex gap-4">
-                      <button 
-                        onClick={() => setIsModalOpen(false)}
-                        className="px-8 py-3 rounded-xl glass hover:bg-white/5 text-white/60 text-xs font-bold uppercase tracking-widest transition-all"
-                      >
-                        Close
-                      </button>
-                      {/* <button className="bg-primary hover:bg-primary-light text-white px-10 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-primary/20">
-                        Manage Booking
-                      </button> */}
-                   </div>
+                <div className="p-8 border-t border-white/5 bg-black/40 flex items-center justify-end gap-4">
+                   <button 
+                     onClick={() => setIsModalOpen(false)}
+                     className="px-8 py-3 rounded-xl glass cursor-pointer hover:bg-white/10 text-white font-bold transition-all border border-white/10"
+                   >
+                     Close
+                   </button>
+                   {/* <button className="px-8 py-3 rounded-xl bg-primary hover:bg-primary-light text-white font-bold transition-all shadow-lg shadow-primary/20">
+                     Issue Refund
+                   </button> */}
                 </div>
               </motion.div>
             </div>
