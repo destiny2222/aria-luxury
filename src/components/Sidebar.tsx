@@ -57,7 +57,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
             <Car className="text-white w-6 h-6" />
           </div>
-          <span className="text-xl font-bold tracking-tight text-white">Car<span className="text-primary italic">Admin</span></span>
+          <span className="text-xl font-bold tracking-tight text-white">Aria<span className="text-primary italic">Luxury</span></span>
         </div>
       </div>
 

@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CarAdmin | Premium Fleet Management",
+  title: "Aria Luxury | Premium Fleet Management",
   description: "A sleek, modern admin dashboard for managing luxury car fleets with real-time analytics.",
 };
 
